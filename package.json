@@ -1,12 +1,12 @@
 {
   "name": "afkary",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Arabic privacy-first idea archive with immutable source texts and local derived indexes",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check src/core.mjs && node --check src/store.mjs && node --check src/app.mjs"
+    "check": "node --check src/core.mjs && node --check src/store.mjs && node --check src/app.mjs && node --check src/theme.mjs && node --check src/gallery.mjs && node --check src/order.mjs"
   },
   "engines": {"node": ">=20"}
 }
