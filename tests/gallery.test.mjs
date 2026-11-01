@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { orderIdeas } from '../src/order.mjs';
+import { orderIdeas, firstSignificantLetter } from '../src/order.mjs';
 import { validTheme, readTheme, THEMES } from '../src/theme.mjs';
 const fixture = [
   { id:'b', title:'بداية', category:'technology', createdAt:'2026-11-01T10:00:00.000Z', raw:'  نص  ' },
@@ -15,6 +15,11 @@ test('all five sort directions preserve original raw entries and input array',()
   assert.deepEqual(orderIdeas(fixture,'alphabetical-desc').map(x=>x.id),['c','b','a']);
   assert.deepEqual(orderIdeas(fixture,'category').map(x=>x.id),['c','b','a']);
   assert.deepEqual(fixture,before);
+});
+test('first letter extraction ignores leading quote characters and Arabic hamza variants',()=>{
+  assert.equal(firstSignificantLetter('“أفكار جديدة”'),'ا');
+  assert.equal(firstSignificantLetter('... برمجة'),'ب');
+  assert.equal(firstSignificantLetter('   '),'#');
 });
 test('five theme presets have distinct safe identifiers and invalid storage reverts to default',()=>{
   assert.equal(THEMES.length,5);
