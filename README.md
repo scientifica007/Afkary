@@ -37,7 +37,9 @@ npm test
 
 مستودع المصدر: <https://github.com/scientifica007/Afkary>.
 
-فعّل **Settings → Pages → Build and deployment → GitHub Actions** في هذا المستودع. بعد نجاح سير العمل يكون رابط التطبيق المتوقع:
+**التشغيل المنشور حاليًا داخل AppHub:** <https://scientifica007.github.io/AppHub/afkary/>. يحتفظ مستودع Afkary بالمصدر الرئيسي، وتوجد نسخة تشغيلية تحت AppHub لضمان الإتاحة دون اشتراط تفعيل Pages في المستودع الجديد.
+
+للنشر المستقل مستقبلًا، فعّل **Settings → Pages → Build and deployment → GitHub Actions** في مستودع Afkary، ثم شغّل سير النشر يدويًا عبر **Actions → Test and deploy Afkary → Run workflow**. بعد نجاح سير العمل يكون رابط التطبيق المتوقع:
 
 <https://scientifica007.github.io/Afkary/>
 
