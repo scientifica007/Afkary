@@ -1,37 +1,44 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SpeechLedger,removeReplay} from '../src/speech-ledger.mjs';
-import {installSpeech} from '../src/speech.mjs';
-const result=(s,isFinal)=>Object.assign([{transcript:s}],{isFinal});
-test('cumulative result callbacks never append old final words twice',()=>{
- const l=new SpeechLedger('قبل');l.nextSession();
- l.ingest([result('هذا اختبار مباشر للتسجيل',true)]);
- l.ingest([result('هذا اختبار مباشر للتسجيل',true),result('الصوتي',false)]);
- assert.equal(l.text(),'قبل هذا اختبار مباشر للتسجيل الصوتي');
- l.ingest([result('هذا اختبار مباشر للتسجيل',true),result('الصوتي',true)]);
- l.finalize();assert.equal(l.text(),'قبل هذا اختبار مباشر للتسجيل الصوتي');
+import {appendRecognized,withoutReplay} from '../src/speech-buffer.mjs';
+import {SpeechLedger} from '../src/speech-ledger.mjs';
+import {readFile} from 'node:fs/promises';
+const f=(s,isFinal)=>Object.assign([{transcript:s}],{isFinal});
+test('final result replay is suppressed within a session',()=>{
+ assert.equal(appendRecognized('مرحبا بكم في التطبيق','مرحبا بكم في التطبيق'),'مرحبا بكم في التطبيق');
 });
-test('cross-session replay is removed but intentional single words remain',()=>{
- const l=new SpeechLedger('');l.nextSession();l.ingest([result('هذه فكرة مفيدة للغاية',true)]);l.finalize();
- l.nextSession(true);l.ingest([result('فكرة مفيدة للغاية ويمكن تنفيذها',true)]);
- assert.equal(l.text(),'هذه فكرة مفيدة للغاية ويمكن تنفيذها');
- assert.equal(removeReplay('نعم','نعم'),'نعم');
+test('restart removes two-word replay and retains new words',()=>{
+ assert.equal(appendRecognized('مرحبا بكم في التطبيق','في التطبيق الآن',{restart:true}),'مرحبا بكم في التطبيق الآن');
 });
-test('unconfirmed words are preserved with limited two-word replay protection',()=>{
- const l=new SpeechLedger('');l.nextSession();l.ingest([result('هذه عبارة لم تكتمل',false)]);
- assert.equal(l.finalize({keepInterim:true}).provisional,true);
- l.nextSession(true);l.ingest([result('لم تكتمل وسوف تكتمل',true)]);
- assert.equal(l.text(),'هذه عبارة لم تكتمل وسوف تكتمل');
+test('intentional one-word repetitions are preserved',()=>{
+ assert.equal(withoutReplay('نعم','نعم'),'نعم');
+ assert.equal(appendRecognized('نعم','نعم',{restart:true}),'نعم نعم');
 });
-test('unsupported recognizer offers clickable explanation instead of disabling input',()=>{
- const b={textContent:'',disabled:false,addEventListener(_type,fn){this.click=fn;}},s={textContent:''},input={focus(){this.focused=true;}};
- installSpeech({input,button:b,status:s,Recognition:null});
- b.click();assert.equal(input.focused,true);assert.match(s.textContent,/لا يوفّر/);
+test('Arabic orthographic variants do not repeat the same phrase',()=>{
+ assert.equal(appendRecognized('هذا إختبار للإملاء الصوتي','للاملاء الصوتي مفيد',{restart:true}),'هذا إختبار للإملاء الصوتي مفيد');
 });
-test('focus controls are kept in one row and toolbar button is reparented',async()=>{
- const {readFile}=await import('node:fs/promises');const root=new URL('../',import.meta.url);
- const [html,style,js]=await Promise.all(['index.html','styles.css','src/workspace.mjs'].map(f=>readFile(new URL(f,root),'utf8')));
- assert.match(html,/class="composer-footer">\s*<div class="voice-row">/);
- assert.match(style,/body\.focus-mode \.composer-footer\{display:flex;flex-direction:row/);
- assert.match(js,/controls\.append\(focusButton\)/);
+test('empty updates do not change the draft',()=>{
+ assert.equal(appendRecognized('نص سابق',''),'نص سابق');
+});
+test('old ledger remains importable and does not mutate stored ideas',()=>{
+ const l=new SpeechLedger('قديم');l.nextSession();l.ingest([f('جملة طويلة من الكلام',true)]);l.finalize();
+ assert.equal(l.text(),'قديم جملة طويلة من الكلام');
+});
+test('recognition is final-only, session-index deduplicated and explicitly inserted',async()=>{
+ const s=await readFile(new URL('../src/speech.mjs',import.meta.url),'utf8');
+ assert.match(s,/recognition\.interimResults=false/);
+ assert.match(s,/seenFinal\.has\(i\)/);
+ assert.match(s,/input\.insertAdjacentElement\('afterend',wrap\)/);
+ assert.match(s,/input\.value=combineWithIdea\(input\.value,text\)/);
+ assert.match(s,/emptyStops>=6/);
+ assert.match(s,/لا يوفّر المتصفح/);
+ assert.doesNotMatch(s,/localStorage\.setItem|indexedDB\.open|fetch\(/);
+});
+test('three archive layouts and three focus actions remain available',async()=>{
+ const root=new URL('../',import.meta.url);
+ const [html,css,archive]=await Promise.all(['index.html','styles.css','src/archive.mjs'].map(p=>readFile(new URL(p,root),'utf8')));
+ assert.match(html,/id="dictate-button"/);
+ assert.match(css,/body\.focus-mode \.composer-footer\{display:flex;flex-direction:row/);
+ assert.match(archive,/state\.layout==='vertical'/);
+ assert.match(archive,/layout-\$\{state\.layout\}/);
 });

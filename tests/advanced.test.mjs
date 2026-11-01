@@ -24,5 +24,5 @@ test('capture supports optional speech with clear fallback and archive provides 
  const [index,archive,speech]=await Promise.all(['index.html','archive.html','src/speech.mjs'].map(f=>readFile(new URL(f,base),'utf8')));
  assert.match(index,/dictate-button/);assert.match(index,/ما الذي يدور في ذهنك/);
  for(const id of ['view-horizontal','view-vertical','view-grid','show-trash','archive-search'])assert.ok(archive.includes(`id="${id}"`));
- assert.match(speech,/webkitSpeechRecognition/);assert.match(speech,/interimResults=true/);
+ assert.match(speech,/webkitSpeechRecognition/);assert.match(speech,/interimResults=false/);
 });
